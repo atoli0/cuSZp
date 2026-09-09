@@ -265,21 +265,32 @@ int main(int argc, char* argv[])
     if(dataType == CUSZP_TYPE_FLOAT) {
         printf("cuSZp compression   end-to-end speed: %f GB/s\n", (nbEle*sizeof(float)/1024.0/1024.0)/cmpTime);
         printf("cuSZp decompression end-to-end speed: %f GB/s\n", (nbEle*sizeof(float)/1024.0/1024.0)/decTime);
-        printf("cuSZp compression ratio: %f\n\n", (nbEle*sizeof(float)/1024.0/1024.0)/(cmpSize*sizeof(unsigned char)/1024.0/1024.0));
+        printf("cuSZp compression ratio: %f\n", (nbEle*sizeof(float)/1024.0/1024.0)/(cmpSize*sizeof(unsigned char)/1024.0/1024.0));
     }
     else if(dataType == CUSZP_TYPE_DOUBLE) {
         printf("cuSZp compression   end-to-end speed: %f GB/s\n", (nbEle*sizeof(double)/1024.0/1024.0)/cmpTime);
         printf("cuSZp decompression end-to-end speed: %f GB/s\n", (nbEle*sizeof(double)/1024.0/1024.0)/decTime);
-        printf("cuSZp compression ratio: %f\n\n", (nbEle*sizeof(double)/1024.0/1024.0)/(cmpSize*sizeof(unsigned char)/1024.0/1024.0));
+        printf("cuSZp compression ratio: %f\n", (nbEle*sizeof(double)/1024.0/1024.0)/(cmpSize*sizeof(unsigned char)/1024.0/1024.0));
     }
 
-    // Error check
+    // Transfer decompressed data back to CPU and compute PSNR
     if(dataType == CUSZP_TYPE_FLOAT) {
         cudaMemcpy(decData, d_decData, sizeof(float)*nbEle, cudaMemcpyDeviceToHost);
+
+        float* oriData_f32 = (float*)oriData;
+        float* decData_f32 = (float*)decData;
+        double *quality_stats = computePSNR(nbEle, oriData_f32, decData_f32);
+        double psnr = quality_stats[2];
+        printf("cuSZp psnr: %f\n\n", psnr);
     }
     else if(dataType == CUSZP_TYPE_DOUBLE) {
         cudaMemcpy(decData, d_decData, sizeof(double)*nbEle, cudaMemcpyDeviceToHost);
+
+        printf("\n");
     }
+
+
+    // Error check
     int not_bound = 0;
     for(size_t i=0; i<nbEle; i++) {
         if(dataType == CUSZP_TYPE_FLOAT) {
